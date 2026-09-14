@@ -1,0 +1,337 @@
+classDiagram
+    direction TB
+
+    %% =========================================================
+    %% CORE
+    %% =========================================================
+    namespace Core {
+        class Observable {
+            -observers_
+            +registerObserver(Observer*)
+            +unregisterObserver(Observer*)
+            +notifyObservers()
+        }
+
+        class Observer {
+            <<interface>>
+            +update()
+            +registerWith(Observable*)
+            +unregisterWith(Observable*)
+        }
+
+        class LazyObject {
+            <<abstract>>
+            -calculated_
+            #performCalculations()*
+            +update()
+            +calculate()
+        }
+    }
+
+    %% =========================================================
+    %% INSTRUMENTS
+    %% =========================================================
+    namespace Instruments {
+        class Instrument {
+            <<abstract>>
+            -engine_
+            -NPV_
+            -ErrorEstimate_
+            +NPV()
+            +isExpired()*
+            +setPricingEngine(PricingEngine)
+            #calculate()
+            #performCalculations()
+            #setupArguments(PricingEngine::arguments*)*
+            #fetchResults(PricingEngine::results*)
+            
+        }
+        
+        class Instrument_Results["Instrument::results"] {
+            +value
+            +errorEstimate
+            +reset()
+        }
+
+        class EQA {
+            -exerciceDate_
+            -evaluationDate_
+            -observationDates_
+            -Nominal_
+            -Coupon_
+            -Bautocall_
+            -Bprotection_
+            -Bcoupon_
+            -M_
+            -T_
+            -Memory_
+            -FinalPayoff_
+            -KIType_
+            -KIObservationType_
+            -CustomKIschedual_
+            -K_
+            -alpha_
+            +EQA(...)
+            +isExpired()
+            +buildDeltaT()
+            #setupArguments()
+        }
+
+        class ELE {
+            -exerciceDate_
+            -evaluationDate_
+            -observationDates_
+            -Nominal_
+            -Coupon_
+            -Bprotection_
+            -Bcoupon_
+            -M_
+            -T_
+            -Memory_
+            +ELE(...)
+            +isExpired()
+            +buildDeltaT()
+            #setupArguments()
+        }
+    }
+
+    %% =========================================================
+    %% PRICING ENGINE
+    %% =========================================================
+    namespace Pricing {
+        class PricingEngine {
+            <<abstract>>
+            +getArguments()*
+            +getResults()*
+            +reset()*
+            +calculate()*
+        }
+        class PricingEngine_Arguments["PricingEngine::Arguments"] {
+            <<abstract>>
+            +validate()*
+        }
+
+        class PricingEngine_Results["PricingEngine::Results"] {
+            <<abstract>>
+            +reset()*
+        }
+
+        class GenericEngine {
+            << template~class ArgumentsType, class ResultsType~ >>
+            -arguments_
+            -results_
+            +getArguments()
+            +getResults()
+            +reset()
+        }
+
+        class EQA_arguments ["EQA::arguments"]{
+	          -exerciceDate
+	          -evaluationDate
+	          -observationDates
+            -Nominal
+            -Coupon
+            -Bautocall
+            -Bprotection
+            -Bcoupon
+            -M
+            -T
+            -Memory
+            -FinalPayoff
+            -KIType
+            -KIObservationType
+            -CustomKIschedual
+            -K
+            -alpha
+            +validate()
+        }
+
+        class ELE_arguments ["ELE::arguments"]{
+            -exerciceDate
+            -evaluationDate
+            -observationDates
+            -Nominal
+            -Coupon
+            -Bprotection
+            -Bcoupon
+            -M
+            -T
+            -Memory
+            +validate()
+        }
+
+        class EQA_engine ["EQA::engine"]{
+            << GenericEngine~EQA::arguments, EQA::results~ >>
+        }
+
+        class ELE_engine ["ELE::engine"]{
+            << GenericEngine~ELE::arguments, ELE:results~ >>
+        }
+
+        class EQAMonteCarloEngine {
+            -process_
+            -nPaths_
+            -generator_
+            -normal_
+            +generatePath()
+            +computePayoff()
+            +computeFinalPayoff()
+            +calculate()
+        }
+
+        class ELEMonteCarloEngine {
+            -process_
+            -nPaths_
+            -generator_
+            -normal_
+            +generatePath()
+            +computePayoff()
+            +calculate()
+        }
+    }
+
+    %% =========================================================
+    %% STOCHASTIC PROCESSES
+    %% =========================================================
+    namespace Processes {
+        class StochasticProcess {
+            <<abstract>>
+            +S0()*
+            +drift(t,S)*
+            +vol(t,S)*
+            +evolve(St,dt,dw,tPrev,t)*
+        }
+
+        class BlackScholesProcess {
+            -spot_
+            -rate_
+            -volatility_
+            +S0()
+            +drift()
+            +vol()
+            +evolve(St,dt,dw,tPrev,t)
+        }
+
+        class DeterministicVolProcess {
+            -spot_
+            -rate_
+            -volCurve_
+            +S0()
+            +drift()
+            +vol(t)
+            +expiryDate(t)
+            +variances()
+            +interpolatedVol(t)
+            +evolve(St,dt,dw,t)
+        }
+
+        class DeterministicVolRateProcess {
+            -spot_
+            -volCurve_
+            -rateCurve_
+            -evaluationDate_
+            -observationDates_
+            +S0()
+            +drift(t)
+            +vol(t)
+            +expiryDate(t)
+            +variances()
+            +interpolatedVol(t)
+            +interpolateVariance(t)
+            +forwardVol(tPrev, t)
+            +forwardRates()
+            +interpolatedRate(t)
+            +evolve(St,dt,dw,tPrev,t)
+        }
+    }
+
+    %% =========================================================
+    %% MARKET DATA
+    %% =========================================================
+    namespace Market {
+        class Quote {
+            <<abstract>>
+            +value()*
+            +isValid()*
+        }
+
+        class SimpleQuote {
+            -value_
+            +value()
+            +isValid()
+            +setValue()
+        }
+
+        class DeterministicCurveQuote {
+            -values_
+            +value()
+            +value(i)
+            +values()
+            +isValid()
+            +setValues()
+        }
+
+        class VolCurve {
+            -volatility_
+            -expiries_
+        }
+
+        class RateCurve {
+            -discountFactors_
+            -expiryDates_
+        }
+    }
+
+    %% =========================================================
+    %% RELATIONS BETWEEN LAYERS (Doit être en dehors des namespaces)
+    %% =========================================================
+
+    %% Core
+    Observable <|-- LazyObject
+    Observer <|.. LazyObject
+
+    %% Instruments
+    LazyObject <|-- Instrument
+    PricingEngine_Results <|-- Instrument_Results
+    Instrument <|-- EQA
+    Instrument <|-- ELE
+
+    %% Pricing Engine
+  
+    PricingEngine <|-- GenericEngine
+    GenericEngine <|-- EQA_engine
+    GenericEngine <|-- ELE_engine
+    EQA_engine <|-- EQAMonteCarloEngine
+    ELE_engine <|-- ELEMonteCarloEngine
+    PricingEngine_Arguments <|-- EQA_arguments
+    PricingEngine_Arguments <|-- ELE_arguments
+   
+
+    %% Stochastic Processes
+    StochasticProcess <|-- BlackScholesProcess
+    StochasticProcess <|-- DeterministicVolProcess
+    StochasticProcess <|-- DeterministicVolRateProcess
+
+    %% Market Data
+    Observable <|-- PricingEngine
+    Observable <|-- Quote
+    Quote <|-- SimpleQuote
+    Quote <|-- DeterministicCurveQuote
+    VolCurve *-- DeterministicCurveQuote
+    RateCurve *-- DeterministicCurveQuote
+
+    %% Interactions Structurelles
+    Instrument --> PricingEngine : uses, sends args & retrieves results
+    EQAMonteCarloEngine --> EQA_arguments : reads parameters
+    ELEMonteCarloEngine --> ELE_arguments : reads parameters
+    EQAMonteCarloEngine --> StochasticProcess : generates paths
+    ELEMonteCarloEngine --> StochasticProcess : generates paths
+    EQAMonteCarloEngine --> EQA : uses product schedule
+    ELEMonteCarloEngine --> ELE : uses product schedule
+
+    BlackScholesProcess --> SimpleQuote : spot / rate / volatility
+    DeterministicVolProcess --> SimpleQuote : spot / rate
+    DeterministicVolProcess --> VolCurve : volatilities
+    DeterministicVolRateProcess --> SimpleQuote : spot
+    DeterministicVolRateProcess --> VolCurve : volatilities
+    DeterministicVolRateProcess --> RateCurve : discount factors

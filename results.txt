@@ -1,0 +1,8 @@
+Number of simulations required for convergence : 3448
+discountFactor : 0.8998130000000000
+
+MYQL DISCOUNT DEBUG
+MYQL discountFactor = 0.900
+MYQL meanPayoff = 11141437.054
+MYQL NPV = 10025209.900
+=========================================
